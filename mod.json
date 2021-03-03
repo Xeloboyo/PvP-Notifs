@@ -1,0 +1,9 @@
+{
+	"name": "pvpnotifs",
+	"displayName": "PvP notifs",
+	"author":"Xelo",
+	"description": "Alerts you to enemy tech progression and unit production",
+	"version": "0.1",
+	"minGameVersion": 117,
+	"hidden": true
+}
