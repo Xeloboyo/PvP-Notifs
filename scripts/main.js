@@ -761,6 +761,11 @@ cons(e => {
 		t.button(new TextureRegionDrawable(progressicon), togglestyle, run(()=>{
 			viewprogress=!viewprogress;
 		})).update(b => b.setChecked(viewprogress)).width(46).height(46).name("progress").tooltip("show progress bar on unit factories");
+		
+		t.button(Icon.units, togglestyle, run(()=>{
+			stealUnit=!stealUnit;
+		})).update(b => b.setChecked(stealUnit)).width(46).height(46).name("stealunit").tooltip("control nearby unit as soon as it exits factory");
+		
 		t.row();
 		t.button(new TextureRegionDrawable(oreicon), togglestyle, run(()=>{
 			orescan=!orescan;
@@ -922,6 +927,7 @@ var viewprogress= true;
 var orescan= false;
 var showpips = true;
 
+
 function eachIndexed(team,flag,cons){
 	let iter = Vars.indexer.getAllied(team,flag).iterator();
 	while(iter.hasNext()){
@@ -1008,6 +1014,15 @@ Events.run(Trigger.draw, () => {
 });
 
 
+function iterateOver(iterator,func){
+	while(iterator.hasNext()) {
+		func(iterator.next());
+	}
+}
+
+
+var glitch = false;
+var delayglitch=0;
 Events.run(Trigger.update, () => {
 	
 	pips.filter((t)=>{
@@ -1024,9 +1039,9 @@ Events.run(Trigger.update, () => {
 			t.timer=-1;
 		}
 	});
-	if(playerAI){
+	if(playerAI && Vars.player.unit()){
 		let base = Math.min(Vars.player.team().items().get(Items.copper),Vars.player.team().items().get(Items.lead));
-		if(base<1000 && playerAI instanceof BuilderAI){
+		if((base<1000 && playerAI instanceof BuilderAI)||  Vars.player.unit().type.buildSpeed<=0){
 			playerAI = playerMiningAI;
 		}else if(base>=1000 && playerAI == playerMiningAI){
 			playerAI = new BuilderAI();
@@ -1049,7 +1064,44 @@ Events.run(Trigger.update, () => {
 		enabled = be;
 		wasCleared = false;
 	}
+	for(var i=0;i<scanningUnits.size;i++){
+		if(scanningUnits.get(i).x!=0){
+			var unit = scanningUnits.get(i);
+			if(Vars.player.unit() && stealUnit && !lookingForUnit){
+				print("attmpting steal");
+				var dist = Mathf.dst(Vars.player.unit().x,Vars.player.unit().y,unit.x,unit.y);
+				if(dist<100){
+					queue.add("[green]Attempting to grab a "+unit.type.localizedName+"...")
+					lookingForUnit=unit.type;
+				}else{
+					print(unit+" spawned too far ("+(dist/8)+" blocks away)");
+					print(Vars.player.unit().x+","+Vars.player.unit().y+"|"+unit.x+","+unit.y);
+				}
+			}
+			scanningUnits.remove(i);
+		}
+	}
 	
+	
+	
+	
+	if(lookingForUnit){
+		Groups.unit.each(cons((e)=>{
+			if(e.isAI() && e.team == Vars.player.team() && !e.dead && e.type==lookingForUnit){
+				stealUnit=false;
+				lookingForUnit=null;
+				Call.unitControl(Vars.player,e);
+			}
+		}));
+	}
+	if(glitch){
+		let mv = Vars.control.input.movement;
+		if(mv.len()>0.1 && delayglitch>20){
+			Vars.netClient.setPosition(Vars.player.unit().x+mv.x*10,Vars.player.unit().y+mv.y*10);
+			delayglitch=0;
+		}
+	}
+	delayglitch++;
 	
 	
 	update();
@@ -1069,12 +1121,9 @@ Events.run(Trigger.update, () => {
 			powerbal+=graph.getPowerBalance();
 		}
 	};
-	Vars.indexer.getAllied(Vars.player.team(), BlockFlag.generator).forEach((c)=>{tilecons(c);});
-	Vars.indexer.getAllied(Vars.player.team(), BlockFlag.reactor).forEach((c)=>{tilecons(c);});
+	iterateOver(Vars.indexer.getAllied(Vars.player.team(), BlockFlag.generator).iterator(),tilecons);
+	iterateOver(Vars.indexer.getAllied(Vars.player.team(), BlockFlag.reactor).iterator(),tilecons);
 	//Vars.control.input.useSchematic(Vars.schematics.all().get(5))
-	
-	
-	
 });
 
 var prevmap="";
@@ -1156,14 +1205,22 @@ Events.on(EventType.BlockBuildBeginEvent, e => {
 	}
 });
 
+
+var stealUnit=true;
+var scanningUnits=new Seq();
+var lookingForUnit=null;
 Events.on(EventType.UnitCreateEvent, e => {
 	print(e.unit.type);
 	var team = e.unit.team;
 	if(team!=Vars.player.team()){
 		getTeamAch(team).processUnitCreateEvent(e.unit.type);
 	}
-	//Call.unitControl(player, unit);
+	scanningUnits.add(e.unit);
+	
+	
+	//
 });
+
 
 
 const onChat = function(sender,message) {
@@ -1205,6 +1262,9 @@ const onChat = function(sender,message) {
 					});
 					queue.add("[cyan]Scanning enemy core items..");
 				}
+			break;
+			case "glitch":
+				glitch=!glitch;
 			break;
 			case "units":
 				if(teams){
