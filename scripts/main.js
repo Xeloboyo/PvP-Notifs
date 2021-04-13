@@ -1039,7 +1039,7 @@ Events.run(Trigger.update, () => {
 			t.timer=-1;
 		}
 	});
-	if(playerAI && Vars.player.unit()){
+	if(playerAI && Vars.player.unit() && Vars.player.unit().type){
 		let base = Math.min(Vars.player.team().items().get(Items.copper),Vars.player.team().items().get(Items.lead));
 		if((base<1000 && playerAI instanceof BuilderAI)||  Vars.player.unit().type.buildSpeed<=0){
 			playerAI = playerMiningAI;
