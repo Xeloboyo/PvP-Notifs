@@ -656,7 +656,6 @@ cons(e => {
 			return;
 		}
 		t.row();
-		t.getCells().get(0).padBottom(6);
 		//prov(()=>{return "Power:"+Strings.fixed(powerBalance()*60.0,1)})
 		//prov(()=>{return Pal.health.cpy().lerp(Color.lime, Math.clamp(powerBalance()*0.25+0.5,0,1))})
 		var powbar= new Bar("Power",Pal.accent, floatp(()=>{return getBatLevel();}));
