@@ -652,6 +652,9 @@ cons(e => {
 	//Vars.indexer.getAllied(team, BlockFlag.generator).forEach((c)=>{});
 	
 	var coreplus = (t)=>{
+		if(!t){
+			return;
+		}
 		t.row();
 		t.getCells().get(0).padBottom(6);
 		//prov(()=>{return "Power:"+Strings.fixed(powerBalance()*60.0,1)})
@@ -660,7 +663,7 @@ cons(e => {
 		powbar.set(prov(()=>{return "Power: "+(powerBalance() >= 0 ? "+" : "") + Strings.fixed(powerBalance()*60.0,1)}),floatp(()=>{return getBatLevel();}),Pal.accent);
 		t.add(powbar).width(200).height(25).pad(4);
 	}
-	coreplus(Vars.ui.hudGroup.find("coreitems"));
+	coreplus(Vars.ui.hudGroup.find(boolf(e=>{return e instanceof CoreItemsDisplay})));
 	
 	
 	var custominfo = extend(BaseDialog,"",{
@@ -1096,10 +1099,14 @@ Events.run(Trigger.update, () => {
 	}
 	if(glitch){
 		let mv = Vars.control.input.movement;
+		/*
+		
 		if(mv.len()>0.1 && delayglitch>20){
 			Vars.netClient.setPosition(Vars.player.unit().x+mv.x*10,Vars.player.unit().y+mv.y*10);
 			delayglitch=0;
-		}
+		}*/
+		Vars.player.unit().vel.x=mv.x*10;
+		Vars.player.unit().vel.y=mv.y*10;
 	}
 	delayglitch++;
 	
@@ -1206,7 +1213,7 @@ Events.on(EventType.BlockBuildBeginEvent, e => {
 });
 
 
-var stealUnit=true;
+var stealUnit=false;
 var scanningUnits=new Seq();
 var lookingForUnit=null;
 Events.on(EventType.UnitCreateEvent, e => {
