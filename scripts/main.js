@@ -1061,7 +1061,7 @@ Events.run(Trigger.update, () => {
 		enabled = false;
 		update();
 		while(!queue.isEmpty()){
-			Vars.ui.chatfrag.addMessage(queue.pop(),"[red]PvP-Alerts");
+			Vars.ui.chatfrag.addMessage("[red]PvP-Alerts: "+queue.pop());
 		}
 		enabled = be;
 		wasCleared = false;
@@ -1150,7 +1150,7 @@ function update(){
 				prevsent=0;
 			}
 		}else{
-			Vars.ui.chatfrag.addMessage(queue.pop(),"[red]PvP-Alerts");
+			Vars.ui.chatfrag.addMessage("[red]PvP-Alerts: "+queue.pop());
 		}
 		
 	}	
